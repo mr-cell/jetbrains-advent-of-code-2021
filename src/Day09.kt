@@ -1,65 +1,75 @@
+class Day09(input: List<String>) {
+    private val caves: Array<IntArray> = parseInput(input)
 
-fun main() {
-    fun parseInput(input: List<String>) : Array<Array<Int>> {
-        return input
-            .map { it.split("") }
-            .map {
-                it.filter { it.isNotBlank() }.map { i -> i.toInt() }
-            }.map { it.toTypedArray() }
-            .toTypedArray()
-    }
+    fun solvePart1(): Int =
+        caves.findLowPoints()
+            .sumOf { caves[it] + 1 }
 
-    fun part1(inputData: List<String>): Int {
-        val input = parseInput(inputData)
-        var riskLevel = 0
-        for (i in input.indices) {
-            for (j in input[i].indices) {
-                val currentField = input[i][j]
-                val neighbours = mutableListOf<Int>()
-                if (i > 0) {
-                    neighbours.add(input[i-1][j])
-                }
-                if (i < input.indices.last) {
-                    neighbours.add(input[i+1][j])
-                }
-                if (j > 0) {
-                    neighbours.add(input[i][j-1])
-                }
-                if (j < input[i].indices.last) {
-                    neighbours.add(input[i][j+1])
-                }
+    fun solvePart2(): Int =
+        caves.findLowPoints()
+            .map { getBasin(it).size }
+            .sortedDescending()
+            .take(3)
+            .reduce { a, b -> a * b }
 
-                val neighboursMin = neighbours.minOf { it }
-                if (currentField < neighboursMin) {
-                    riskLevel += currentField + 1
-                }
-            }
+    private fun getBasin(point: Point2d): Set<Point2d> {
+        val visited = mutableSetOf(point)
+        val queue = mutableListOf(point)
+
+        while (queue.isNotEmpty()) {
+            val newNeighbours = queue.removeFirst()
+                .validNeighbours()
+                .filter { it !in visited }
+                .filter { caves[it] != 9 }
+
+            visited.addAll(newNeighbours)
+            queue.addAll(newNeighbours)
         }
-        return riskLevel
+        return visited
     }
 
-    fun part2(inputData: List<String>): Int {
-        return 0
-    }
+    private fun parseInput(input: List<String>): Array<IntArray> =
+        input.map { row ->
+            row.map { it.digitToInt() }.toIntArray()
+        }.toTypedArray()
 
-    // test if implementation meets criteria from the description, like:
-    val testInput = readInput("Day09_test")
-    check(part1(testInput) == 15)
-    check(part2(testInput) == 1134)
+    private fun Array<IntArray>.findLowPoints(): List<Point2d> =
+        flatMapIndexed { y, row ->
+            row.mapIndexed {x, value ->
+                Point2d(x, y).takeIf { point ->
+                    point.validNeighbours().map { caves[it] }.all { value < it }
+                }
+            }.filterNotNull()
+        }
 
-    val input = readInput("Day09")
-    println(part1(input))
-    println(part2(input))
+    private operator fun Array<IntArray>.get(point: Point2d): Int = this[point.y][point.x]
+
+    private operator fun Array<IntArray>.contains(point: Point2d): Boolean =
+        point.y in this.indices && point.x in this[point.y].indices
+
+    private fun Point2d.validNeighbours(): List<Point2d> =
+        neighbours().filter { it in caves }
 }
 
-class ComparablePair(val first: Int, val second: Int): Comparable<ComparablePair> {
-    override fun compareTo(other: ComparablePair): Int {
-        val firstCompared = first.compareTo(other.first)
-        val secondCompared = second.compareTo(other.second)
-        return if (firstCompared != 0) {
-            firstCompared;
-        } else {
-            secondCompared;
-        }
-    }
+data class Point2d(val x: Int, val y: Int) {
+    fun neighbours(): List<Point2d> =
+        listOf(
+            Point2d(x - 1, y),
+            Point2d(x + 1, y),
+            Point2d(x, y - 1),
+            Point2d(x, y + 1)
+        )
+}
+
+fun main() {
+    // test if implementation meets criteria from the description, like:
+    val testInput = readInput("Day09_test")
+    val day9test = Day09(testInput)
+    check(day9test.solvePart1() == 15)
+    check(day9test.solvePart2() == 1134)
+
+    val input = readInput("Day09")
+    val day9 = Day09(input)
+    println(day9.solvePart1())
+    println(day9.solvePart2())
 }
