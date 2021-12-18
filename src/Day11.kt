@@ -1,102 +1,37 @@
+typealias OctopusCave = Map<Day11.Point2d, Int>
+
 class Day11(input: List<String>) {
-    private val octopi = parseInput(input)
+    private val octopusCave = parseInput(input)
 
-    private fun parseInput(input: List<String>): Array<IntArray> =
-        input.map { row ->
-                row.split("")
-                    .filter { it.isNotBlank() }
-                    .map { it.toInt() }
-                    .toIntArray()
-        }.toTypedArray()
+    private fun parseInput(input: List<String>): OctopusCave =
+        input.flatMapIndexed { y, row ->
+            row.mapIndexed { x, energy -> Point2d(x, y) to energy.digitToInt() }
+        }.toMap()
 
-    fun solvePart1(): Int {
-        var flashesCounter = 0
-        for (step in 1..100) {
-            val willFlash = mutableListOf<Point2d>()
-            val flashed = mutableSetOf<Point2d>()
-            for (y in octopi.indices) {
-                for (x in octopi[y].indices) {
-                    val point = Point2d(x, y)
-                    octopi[point]++
-                    if (octopi[point] > 9) {
-                        willFlash.add(point)
-                        flashed.add(point)
-                    }
-                }
-            }
+    fun solvePart1(): Int = octopusCave.steps().take(100).sum()
 
-            while (willFlash.isNotEmpty()) {
-                willFlash.removeFirst().also { flashed.add(it) }.validNeighbours()
-                    .forEach { point ->
-                        octopi[point]++
-                        if (octopi[point] > 9 && point !in flashed && point !in willFlash) {
-                            willFlash.add(point)
-                        }
-                    }
-            }
+    fun solvePart2(): Int = octopusCave.steps().indexOfFirst { it == octopusCave.size } + 1
 
-            flashed.forEach { point -> octopi[point] = 0 }
-            flashesCounter += flashed.size
+    private fun OctopusCave.steps(): Sequence<Int> = sequence {
+        val cave = this@steps.toMutableMap()
 
-        }
-        return flashesCounter
-    }
-
-    fun solvePart2(): Int {
-        var step = 0
         while (true) {
-            step++
-            val willFlash = mutableListOf<Point2d>()
-            val flashed = mutableSetOf<Point2d>()
-            for (y in octopi.indices) {
-                for (x in octopi[y].indices) {
-                    val point = Point2d(x, y)
-                    octopi[point]++
-                    if (octopi[point] > 9) {
-                        willFlash.add(point)
-                        flashed.add(point)
-                    }
-                }
-            }
+            cave.forEach { (point, energy) -> cave[point] = energy + 1 }
+            do {
+                val flashesThisRound = cave.filterValues { it > 9 }.keys
+                flashesThisRound.forEach { cave[it]  = 0 }
 
-            while (willFlash.isNotEmpty()) {
-                willFlash.removeFirst().also { flashed.add(it) }.validNeighbours()
-                    .forEach { point ->
-                        octopi[point]++
-                        if (octopi[point] > 9 && point !in flashed && point !in willFlash) {
-                            willFlash.add(point)
-                        }
-                    }
-            }
+                flashesThisRound
+                    .flatMap { it.neighbours() }
+                    .filter { it in cave && cave[it] != 0 }
+                    .forEach{ cave[it] = cave.getValue(it) + 1 }
+            } while (flashesThisRound.isNotEmpty())
 
-            flashed.forEach { point -> octopi[point] = 0 }
-
-            if (flashed.size == 100) {
-                return step
-            }
-
+            yield(cave.count { it.value == 0 })
         }
     }
 
-    private operator fun Array<IntArray>.get(point: Point2d): Int = this[point.y][point.x]
-
-    private operator fun Array<IntArray>.set(point: Point2d, value: Int) {
-        this[point.y][point.x] = value
-    }
-
-    private operator fun Array<IntArray>.contains(point: Point2d): Boolean =
-        point.y in this.indices && point.x in this[point.y].indices
-
-    private fun Array<IntArray>.print() {
-        for (row in this) {
-            println(row.fold("") { acc, i -> acc + i.toString() })
-        }
-        println()
-    }
-
-    private fun Point2d.validNeighbours(): List<Point2d> = neighbours().filter { it in octopi }
-
-    private data class Point2d(val x: Int, val y: Int) {
+    data class Point2d(val x: Int, val y: Int) {
         fun neighbours(): List<Point2d> =
             listOf(
                 Point2d(x - 1, y),
@@ -104,7 +39,7 @@ class Day11(input: List<String>) {
                 Point2d(x, y - 1),
                 Point2d(x, y + 1),
                 Point2d(x - 1, y - 1),
-                Point2d(x - 1, y + 1),
+                Point2d(x - 1 , y + 1),
                 Point2d(x + 1, y - 1),
                 Point2d(x + 1, y + 1)
             )
