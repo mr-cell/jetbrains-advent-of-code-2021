@@ -1,49 +1,51 @@
+class Day02(private val input: List<String>) {
+    fun solvePart1(): Int = moveSubmarine { submarine, command ->
+        with(command) {
+            when (direction) {
+                "forward" -> submarine.copy(horizontal = submarine.horizontal + value)
+                "up" -> submarine.copy(depth = submarine.depth - value)
+                "down" -> submarine.copy(depth = submarine.depth + value)
+                else -> submarine
+            }
+        }
+    }.finalPosition()
+
+    fun solvePart2(): Int = moveSubmarine { submarine, command ->
+        with(command) {
+            when(direction) {
+                "forward" -> submarine.copy(horizontal =  submarine.horizontal + value, depth = submarine.depth + (submarine.aim * value))
+                "up" -> submarine.copy(aim = submarine.aim - value)
+                "down" -> submarine.copy(aim = submarine.aim + value)
+                else -> submarine
+            }
+        }
+    }.finalPosition()
+
+    private fun moveSubmarine(moveFun: (Submarine, Command) -> Submarine): Submarine {
+        return input.map { Command.of(it) }.fold(Submarine(), moveFun)
+    }
+
+    private data class Submarine(val horizontal: Int = 0, val depth: Int = 0, val aim: Int = 0) {
+        fun finalPosition() = horizontal * depth
+    }
+
+    private class Command(val direction: String, val value: Int) {
+        companion object {
+            fun of(input: String): Command =
+                input.split(" ").let { Command(it.first(), it.last().toInt()) }
+        }
+    }
+}
+
 fun main() {
-    fun calculatePosition(input: List<String>): Int {
-        return input
-            .map { it.split(" ") }
-            .fold(Pair(0, 0)) { coords, directions ->
-                val value = directions[1].toInt()
-                when (directions[0]) {
-                    "forward" -> return@fold Pair(coords.first + value, coords.second)
-                    "down" -> return@fold Pair(coords.first, coords.second + value)
-                    "up" -> return@fold Pair(coords.first, coords.second - value)
-                    else -> return@fold coords
-                }
-            }.let { it.first * it.second }
-    }
-
-    fun calculatePositionWithAim(input: List<String>): Int {
-        return input
-            .map { it.split(" ") }
-            .fold(Triple(0, 0, 0)) { coords, directions ->
-                val value = directions[1].toInt()
-                when (directions[0]) {
-                    "forward" -> return@fold Triple(
-                        coords.first + value,
-                        coords.second + (coords.third * value),
-                        coords.third)
-                    "down" -> return@fold Triple(
-                        coords.first,
-                        coords.second,
-                        coords.third + value
-                    )
-                    "up" -> return@fold Triple(
-                        coords.first,
-                        coords.second,
-                        coords.third - value
-                    )
-                    else -> return@fold coords
-                }
-            }.let { it.first * it.second }
-    }
-
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day02_test")
-    check(calculatePosition(testInput) == 150)
-    check(calculatePositionWithAim(testInput) == 900)
+    val day2Test = Day02(testInput)
+    check(day2Test.solvePart1() == 150)
+    check(day2Test.solvePart2() == 900)
 
     val input = readInput("Day02")
-    println(calculatePosition(input))
-    println(calculatePositionWithAim(input))
+    val day2 = Day02(input)
+    println(day2.solvePart1())
+    println(day2.solvePart2())
 }
