@@ -1,100 +1,37 @@
-import kotlin.math.pow
+class Day03(private val input: List<String>) {
+
+    fun solvePart1(): Int {
+        val gamma = input.first().indices.map { column ->
+            if (input.count { it[column] == '1' } > input.size / 2) '1' else '0'
+        }.joinToString(separator = "")
+
+        val epsilon = gamma.map { if(it == '1') '0' else '1' }.joinToString(separator = "")
+        return gamma.toInt(2) * epsilon.toInt(2)
+    }
+
+    fun solvePart2(): Int =
+        input.bitwiseFilter(true).toInt(2) * input.bitwiseFilter(false).toInt(2)
+
+    private fun List<String>.bitwiseFilter(keepMostCommon: Boolean): String =
+        first().indices.fold(this) { inputs, column ->
+            if (inputs.size == 1) inputs else {
+                val split = inputs.partition { it[column] == '1' }
+                if (keepMostCommon) split.longest() else split.shortest()
+            }
+        }.first()
+
+    private fun <T> Pair<List<T>, List<T>>.longest(): List<T> = if (first.size >= second.size) first else second
+    private fun <T> Pair<List<T>, List<T>>.shortest(): List<T> = if (first.size < second.size) first else second
+}
 
 fun main() {
-    fun part1(input: List<String>): Int {
-        val counter = IntArray(input[0].length)
-        input
-            .map { it.asSequence() }
-            .forEach { it.forEachIndexed { index, c ->
-                when (c) {
-                    '0' -> counter[index]--
-                    '1' -> counter[index]++
-                }
-            } }
-        counter.reverse()
-        val gamma = counter.foldIndexed(0) { index, agg, v ->
-            return@foldIndexed if (v > 0) {
-                agg + 1 * 2.0.pow(index.toDouble()).toInt()
-            } else {
-                agg
-            }
-        }
-
-        val epsilon = counter.foldIndexed(0) { index, agg, v ->
-            return@foldIndexed if (v < 0) {
-                agg + 1 * 2.0.pow(index.toDouble()).toInt()
-            } else {
-                agg
-            }
-        }
-        return gamma * epsilon
-    }
-
-    fun part2(input: List<String>): Int {
-        val size = input[0].length
-        var entries = input
-        IntRange(0, size - 1).forEach { i ->
-            if (entries.size > 1) {
-                var counter = 0
-                entries
-                    .map { it.asSequence() }
-                    .forEach {
-                        it.forEachIndexed { index, c ->
-                            if (index == i) {
-                                when (c) {
-                                    '0' -> counter--
-                                    '1' -> counter++
-                                }
-                            }
-                        }
-                    }
-                entries = entries.filter { entry ->
-                    if (counter >= 0) {
-                        entry[i] == '1'
-                    } else {
-                        entry[i] == '0'
-                    }
-                }
-            }
-        }
-        val o2Rating = entries[0].toInt(2)
-
-        entries = input
-        IntRange(0, size - 1).forEach { i ->
-            if (entries.size > 1) {
-                var counter = 0
-                entries
-                    .map { it.asSequence() }
-                    .forEach {
-                        it.forEachIndexed { index, c ->
-                            if (index == i) {
-                                when (c) {
-                                    '0' -> counter--
-                                    '1' -> counter++
-                                }
-                            }
-                        }
-                    }
-                entries = entries.filter { entry ->
-                    if (counter >= 0) {
-                        entry[i] == '0'
-                    } else {
-                        entry[i] == '1'
-                    }
-                }
-            }
-        }
-        val co2Rating = entries[0].toInt(2)
-        println("$o2Rating, $co2Rating")
-        return o2Rating * co2Rating
-    }
-
-    // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day03_test")
-    check(part1(testInput) == 198)
-    check(part2(testInput) == 230)
+    val day3Test = Day03(testInput)
+    check(day3Test.solvePart1() == 198)
+    check(day3Test.solvePart2() == 230)
 
     val input = readInput("Day03")
-    println(part1(input))
-    println(part2(input))
+    val day3 = Day03(input)
+    println(day3.solvePart1())
+    println(day3.solvePart2())
 }
