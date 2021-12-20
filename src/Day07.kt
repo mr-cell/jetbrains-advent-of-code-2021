@@ -1,52 +1,33 @@
-import java.util.*
-import java.util.stream.Collectors
-import kotlin.math.abs
-import kotlin.math.roundToInt
+import kotlin.math.absoluteValue
+
+class Day07(input: List<String>) {
+    private val crabs: Map<Int, Int> = parseInput(input)
+
+    private fun parseInput(input: List<String>) =
+        input.flatMap { it.split(",") }.map { it.toInt() }.groupingBy { it }.eachCount()
+
+    fun solvePart1() = solve { it }
+
+    fun solvePart2(): Int = solve { distance -> (distance * (distance + 1)) / 2 }
+
+    private fun solve(fuelCost: (Int) -> Int) = crabs.keys.asRange().minOf { target ->
+        crabs.map { (crab, crabCount) ->
+            fuelCost((target - crab).absoluteValue) * crabCount
+        }.sum()
+    }
+
+    private fun Set<Int>.asRange(): IntRange = this.minOf { it }..this.maxOf { it }
+}
 
 fun main() {
-    fun parseInput(input: List<String>) : List<Int> {
-        return input.flatMap { it.split(",") }.map { it.toInt() }
-    }
-
-
-    fun part1(input: List<String>): Int {
-        val positions = parseInput(input)
-        val max = positions.maxOf { it }
-        val min = positions.minOf { it }
-
-        var minFuel = Int.MAX_VALUE
-        for (i in min..max) {
-            val fuel = positions.fold(0) { acc, pos -> acc + abs(pos - i) }
-            if (fuel < minFuel) {
-                minFuel = fuel
-            }
-        }
-        return minFuel
-    }
-
-    fun sumOfSeries(seriesMaxElement: Int): Int = IntRange(0, seriesMaxElement).sum()
-
-    fun part2(input: List<String>): Int {
-        val positions = parseInput(input)
-        val max = positions.maxOf { it }
-        val min = positions.minOf { it }
-
-        var minFuel = Int.MAX_VALUE
-        for (i in min..max) {
-            val fuel = positions.fold(0) { acc, pos -> acc + sumOfSeries(abs(pos - i)) }
-            if (fuel < minFuel) {
-                minFuel = fuel
-            }
-        }
-        return minFuel
-    }
-
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day07_test")
-    check(part1(testInput) == 37)
-    check(part2(testInput) == 168)
+    val day7Test = Day07(testInput)
+    check(day7Test.solvePart1() == 37)
+    check(day7Test.solvePart2() == 168)
 
     val input = readInput("Day07")
-    println(part1(input))
-    println(part2(input))
+    val day07 = Day07(input)
+    println(day07.solvePart1())
+    println(day07.solvePart2())
 }
