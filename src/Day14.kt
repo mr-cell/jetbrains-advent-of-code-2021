@@ -1,41 +1,46 @@
-typealias Instructions = Map<String, String>
-typealias PolymerChain = String
+typealias PolymerChain = Map<String, Long>
 
 class Day14(input: List<String>) {
-    private val startingChain: PolymerChain = input[0]
-    private val instructions = parseInputForInstructions(input)
+    private val lastChar = input.first().last()
+    private val startingChain = parseStartingChain(input)
+    private val instructions = parseInstructions(input)
 
-    private fun parseInputForInstructions(input: List<String>): Instructions  = input
-        .drop(2)
-        .map { it.split(" -> ") }
-        .map { Pair(it.first(), it.last()) }
-        .associate { Pair(it.first, listOf(it.first.first(), it.second.first(), it.first.last()).joinToString(separator = "")) }
+    private fun parseInstructions(input: List<String>): Map<String, String>  =
+        input.drop(2).flatMap { it.split(" -> ") }.chunked(2).associate { Pair(it.first(), it.last()) }
 
-    private fun PolymerChain.steps(): Sequence<String> = sequence {
-        var polymerChain = startingChain
+    private fun parseStartingChain(input: List<String>): PolymerChain  =
+        input.first().windowed(2).groupingBy { it }.eachCount().mapValues { it.value.toLong() }
 
-        while (true) {
-            polymerChain = polymerChain.toCharArray().toList()
-                .windowed(2, 1) { it.joinToString(separator = "") }
-                .map { instructions.getOrDefault(it, it) }
-                .reduce { acc, elem -> acc + elem.drop(1) }
-            yield(polymerChain)
+    private fun PolymerChain.react(instructions: Map<String, String>): PolymerChain = buildMap {
+        this@react.forEach { (pair, count) ->
+            instructions[pair]?.also {
+                plus("${pair.first()}$it", count)
+                plus("$it${pair.last()}", count)
+            } ?: plus("${pair.first()}${pair.last()}", count)
         }
     }
 
-    fun solvePart1(): Int  {
-        val counts = startingChain.steps().take(10).last().toCharArray().toList().groupingBy { it }.eachCount()
-        val min = counts.minOf { it.value }
-        val max = counts.maxOf { it.value }
-        return max - min
+    private fun <T> MutableMap<T, Long>.plus(key: T, amount: Long) {
+        this[key] = this.getOrDefault(key, 0L) + amount
     }
 
-    fun solvePart2(): Long {
-        val counts = startingChain.steps().take(40).last().toCharArray().toList().groupingBy { it }.eachCount()
-        val min = counts.minOf { it.value.toLong() }
-        val max = counts.maxOf { it.value.toLong() }
-        return max - min
-    }
+    private fun Map<String, Long>.byCharFrequency(): Map<Char, Long> =
+        this
+            .map { it.key.first() to it.value }
+            .groupBy({it.first}, {it.second})
+            .mapValues { it.value.sum() + if (it.key == lastChar) 1 else 0 }
+
+    private fun solve(iterations: Int): Long =
+        (0 until iterations)
+            .fold(startingChain) { polymer, _ -> polymer.react(instructions)}
+            .byCharFrequency()
+            .values
+            .sorted()
+            .let { it.last() - it.first() }
+
+    fun solvePart1(): Long  = solve(10)
+
+    fun solvePart2(): Long = solve(40)
 }
 
 fun main() {
@@ -43,7 +48,7 @@ fun main() {
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day14_test")
     val day14Test = Day14(testInput)
-    check(day14Test.solvePart1() == 1588)
+    check(day14Test.solvePart1() == 1588L)
     check(day14Test.solvePart2() == 2188189693529L)
 
     val input = readInput("Day14")
